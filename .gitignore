@@ -124,3 +124,20 @@ dmypy.json
 
 # vscode
 .vscode/
+
+# do not commit private dataset
+dataset/rene
+
+# do not commit DNN model
+workspace/frozen_inference_graph.pb
+
+# do not commit old configuration
+workspace/configuration-old.yml
+
+# do not commit experiment results
+workspace/results
+workspace/debugging
+workspace/stats
+
+# do not commit deprecated tools
+workspace/deprecated

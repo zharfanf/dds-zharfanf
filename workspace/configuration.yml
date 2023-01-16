@@ -14,14 +14,15 @@ default:
   # overwrite existing results or not
   overwrite: False
   # the video name you want to run. Can be a list or a single string
-  video_name: trafficcam_1
+  video_name: rene
   # several configurations, a lot of them are ... just issues left over from history.
   max_object_size: 0.3
-  low_threshold: 0.3
+  low_threshold: 0.5
   high_threshold: 0.8
   enforce_iframes: True
   verbosity: info
   simulate: False
+  # hname must be the ip:port of the server if in implementation mode
   hname: False
   intersection_threshold: 1.0
   low_results_path: None
@@ -32,15 +33,19 @@ default:
   low_images_path: None
   tracker_length: 4
   # the size of a video chunk
-  batch_size: 15
+  batch_size: 5
   min_object_size: 0
   boundary: 0.2
   tracking_threshold: 0.3
   suppression_threshold: 0.5
-  rpn_enlarge_ratio: 0
-  prune_score: 1.1
-  objfilter_iou: 1.1
-  size_obj: 1.1
+  # Deprecated parameter
+  rpn_enlarge_ratio: 0.0
+  # The score to prune out those low-objectness-score regions. Just to control the bandwidth
+  prune_score: 0.5
+  # Two regions will be treated as the same region if the intersection-over-union (IoU) is larger than this threshold
+  objfilter_iou: 0.8
+  # control the size of the object
+  size_obj: 0.4
   # Turn on debug_mode to show what DDS sends in second iteration.
   debug_mode: False
   # The path to the ground truth. Will be automatically set in entrance.py
@@ -62,27 +67,53 @@ instances:
   low_resolution: 1.0
 - method: mpeg
   low_qp:
-  - 36
+  - 24
   - 26
-  low_resolution: 0.8
-- batch_size: 15
-  # the configuration for the Stream A (low) and Stream B (high)
-  high_qp: 26
-  high_resolution: 0.8
-  low_qp: 36
-  low_resolution: 0.8
-  method: dds
-  # Two regions will be treated as the same region if the intersection-over-union (IoU) is larger than this threshold
-  objfilter_iou: 0.3
-  # The score to prune out those low-objectness-score regions. Just to control the bandwidth
-  prune_score: 0.5
-  # Deprecated parameter
-  rpn_enlarge_ratio: 0.0
-  # control the size of the object
-  size_obj: 0.01
-  # hname must be the ip:port of the server if in implementation mode
-  hname: False
-  # print the regions that DDS generates if set to True
-  debug_mode: True
+  - 28
+  - 30
+  - 32
+  - 34
+  low_resolution:
+  - 1.0
+  - 0.9
+  - 0.8
+  - 0.7
+  - 0.6
+  - 0.5
+  - 0.4
+  - 0.3
+  - 0.2
+  - 0.1
+- method: dds
   # mode can be emulation or implementation. Emulation: trasmit the video through disk, Implementation: send the video through http protocol
   mode: emulation
+  # print the regions that DDS generates if set to True
+  debug_mode: True
+  # the configuration for the Stream A (low) and Stream B (high)
+  high_qp: 
+  - 24
+  - 26
+  - 28
+  high_resolution: 
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  - 0.6
+  - 0.7
+  - 0.8
+  - 0.9
+  - 1.0
+  low_qp:
+  - 30
+  - 32 
+  - 34
+  low_resolution: 
+  - 0.1
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  - 0.6
+  - 0.7
+  - 0.8
