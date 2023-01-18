@@ -14,7 +14,7 @@ default:
   # overwrite existing results or not
   overwrite: False
   # the video name you want to run. Can be a list or a single string
-  video_name: rene
+  video_name: rene-25-3
   # several configurations, a lot of them are ... just issues left over from history.
   max_object_size: 0.3
   low_threshold: 0.5
@@ -24,6 +24,7 @@ default:
   simulate: False
   # hname must be the ip:port of the server if in implementation mode
   hname: False
+  # used in combine_results
   intersection_threshold: 1.0
   low_results_path: None
   high_results_path: None
@@ -68,14 +69,11 @@ instances:
 - method: mpeg
   low_qp:
   - 24
-  - 26
-  - 28
   - 30
   - 32
   - 34
   low_resolution:
   - 1.0
-  - 0.9
   - 0.8
   - 0.7
   - 0.6

@@ -60,6 +60,11 @@ class Region:
         return string_rep
 
     def is_same(self, region_to_check, threshold=0.5):
+        """
+        Check if itself is the same as the region_to_check.
+
+        Same region: same fid, label, and IoU <= `threshold`
+        """
         # If the fids or labels are different
         # then not the same
         if (self.fid != region_to_check.fid or
@@ -91,6 +96,11 @@ class Region:
 
 
 class Results:
+    """
+    A Result class with
+    - regions: [Regions]
+    - regions_dict: dict[frame ID, [Regions]]
+    """
     def __init__(self):
         self.regions = []
         self.regions_dict = {}
@@ -105,9 +115,15 @@ class Results:
                 count += 1
         return count
 
-    def is_dup(self, result_to_add, threshold=0.5):
-        # return the regions with IOU greater than threshold
-        # and maximum confidence
+    def is_dup(self, result_to_add: Region, threshold=0.5):
+        """
+        Among all regions in the same frame, return the region with the maximum confidence that
+        - IOU >= threshold
+
+        return None if such region does not exist
+        """
+
+        # no regions in this frame is added yet
         if result_to_add.fid not in self.regions_dict:
             return None
 
@@ -121,21 +137,29 @@ class Results:
         return max_conf_result
 
     def combine_results(self, additional_results, threshold=0.5):
+        """
+        
+        """
         for result_to_add in additional_results.regions:
             self.add_single_result(result_to_add, threshold)
 
-    def add_single_result(self, region_to_add, threshold=0.5):
+    def add_single_result(self, region_to_add: Region, threshold=0.5):
+
+        # Add anyway if threashold = 1
         if threshold == 1:
             self.append(region_to_add)
             return
-        dup_region = self.is_dup(region_to_add, threshold)
-        if (not dup_region or
+        dup_region = self.is_dup(region_to_add, threshold) 
+        if (not dup_region or # If no duplicate exists, OR
                 ("tracking" in region_to_add.origin and
-                 "tracking" in dup_region.origin)):
+                 "tracking" in dup_region.origin)): # The origin is tracking for both regions
+            
+            # Add the region to regions and regions_dict
             self.regions.append(region_to_add)
             if region_to_add.fid not in self.regions_dict:
                 self.regions_dict[region_to_add.fid] = []
             self.regions_dict[region_to_add.fid].append(region_to_add)
+
         else:
             final_object = None
             if dup_region.origin == region_to_add.origin:

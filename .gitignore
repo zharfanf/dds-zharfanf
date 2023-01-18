@@ -126,7 +126,7 @@ dmypy.json
 .vscode/
 
 # do not commit private dataset
-dataset/rene
+dataset/rene*
 
 # do not commit DNN model
 workspace/frozen_inference_graph.pb
@@ -138,6 +138,7 @@ workspace/configuration-old.yml
 workspace/results
 workspace/debugging
 workspace/stats
+workspace/archive
 
 # do not commit deprecated tools
 workspace/deprecated

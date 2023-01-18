@@ -30,6 +30,8 @@ class Client:
         self.logger.info(f"Client initialized")
 
     def analyze_video_mpeg(self, video_name, raw_images_path, enforce_iframes):
+
+        # calculate the number of frames
         number_of_frames = len(
             [f for f in os.listdir(raw_images_path) if ".png" in f])
 
@@ -44,18 +46,26 @@ class Client:
                                    for idx in range(start_frame, end_frame)])
 
             req_regions = Results()
+
+            # The entire frame is a region
             for fid in range(start_frame, end_frame):
                 req_regions.append(
                     Region(fid, 0, 0, 1, 1, 1.0, 2,
                            self.config.low_resolution))
+
+            # compute the video size of the batch
             batch_video_size, _ = compute_regions_size(
                 req_regions, f"{video_name}-base-phase", raw_images_path,
                 self.config.low_resolution, self.config.low_qp,
                 enforce_iframes, True)
             self.logger.info(f"{batch_video_size / 1024}KB sent "
                              f"in base phase using {self.config.low_qp}QP")
+
+            #TODO: what does this do?
             extract_images_from_video(f"{video_name}-base-phase-cropped",
                                       req_regions)
+            
+            # run DNN
             results, rpn_results = (
                 self.server.perform_detection(
                     f"{video_name}-base-phase-cropped",
@@ -64,8 +74,12 @@ class Client:
             self.logger.info(f"Detection {len(results)} regions for "
                              f"batch {start_frame} to {end_frame} with a "
                              f"total size of {batch_video_size / 1024}KB")
+
+            # Add results to final_results (empty Result)
             final_results.combine_results(
                 results, self.config.intersection_threshold)
+            
+            # Add rpn_results to final_rpn_results (empty Result)
             final_rpn_results.combine_results(
                 rpn_results, self.config.intersection_threshold)
 
@@ -73,6 +87,8 @@ class Client:
             shutil.rmtree(f"{video_name}-base-phase-cropped")
             total_size += batch_video_size
 
+        # Remove regions with confid < 0.3
+        # 
         final_results = merge_boxes_in_results(
             final_results.regions_dict, 0.3, 0.3)
         final_results.fill_gaps(number_of_frames)
