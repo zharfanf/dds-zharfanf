@@ -1,117 +1,48 @@
-# The configuration file is a yaml file that follows yaml format
-#
-# The directory to your dataset
-# The data must be organized as /path/to/dataset/your_video_name/src/%010d.png, start from id=0
-# We use png to avoid error caused by jpeg compression
 data_dir: ../dataset
-#
-# Set the default value of parameters here
-# All the parameters here will be forwarded to each instance
-# You can add any variables here as long as you obey the basic yaml format.
-# So please use this part nicely to avoid hard-coding.
-# You could specify multiple values for each parameter through yaml list. The code will automatically sweep all parameters for you
 default:
-  # overwrite existing results or not
-  overwrite: False
-  # the video name you want to run. Can be a list or a single string
-  video_name: rene-25-3
-  # several configurations, a lot of them are ... just issues left over from history.
+  overwrite: false
+  video_name: rene
   max_object_size: 0.3
   low_threshold: 0.5
   high_threshold: 0.8
-  enforce_iframes: True
+  enforce_iframes: true
   verbosity: info
-  simulate: False
-  # hname must be the ip:port of the server if in implementation mode
-  hname: False
-  # used in combine_results
-  intersection_threshold: 1.0
+  simulate: false
+  hname: false
+  intersection_threshold: 1
   low_results_path: None
   high_results_path: None
   high_resolution: -1
   high_qp: -1
-  estimate_banwidth: False
+  estimate_banwidth: false
   low_images_path: None
   tracker_length: 4
-  # the size of a video chunk
   batch_size: 5
   min_object_size: 0
   boundary: 0.2
   tracking_threshold: 0.3
   suppression_threshold: 0.5
-  # Deprecated parameter
-  rpn_enlarge_ratio: 0.0
-  # The score to prune out those low-objectness-score regions. Just to control the bandwidth
+  rpn_enlarge_ratio: 0
   prune_score: 0.5
-  # Two regions will be treated as the same region if the intersection-over-union (IoU) is larger than this threshold
   objfilter_iou: 0.8
-  # control the size of the object
   size_obj: 0.4
-  # Turn on debug_mode to show what DDS sends in second iteration.
-  debug_mode: False
-  # The path to the ground truth. Will be automatically set in entrance.py
-  ground_truth: False
+  debug_mode: false
+  ground_truth: false
   mode: emulation
-#
-# Specify each instance here
-# You could overwrite the default configuration for each instance
-# The configuration will be directly forwarded to the server
-# You could specify multiple values for each parameter through yaml list
-# We will automatically spawn multiple instances for you
-# E.g., if you specify qp = [1,2], resolution = [0.6,0.8]
-# You will get four instances with (qp,resolution)=(1,0.6),(1,0.8),(2,0.6),(2,0.8)
+  adaptive_mode: true
+  adaptive_test_display: 2738.25390625
 instances:
-- method: gt
-  # quantization parameter, higher qp means worse quality.
-  low_qp: 24
-  # resolution is a number in (0, 1]. We will scale the width and the hight according to this factor.
-  low_resolution: 1.0
-- method: mpeg
-  low_qp:
-  - 24
-  - 30
-  - 32
-  - 34
-  low_resolution:
-  - 1.0
-  - 0.8
-  - 0.7
-  - 0.6
-  - 0.5
-  - 0.4
-  - 0.3
-  - 0.2
-  - 0.1
-- method: dds
-  # mode can be emulation or implementation. Emulation: trasmit the video through disk, Implementation: send the video through http protocol
-  mode: emulation
-  # print the regions that DDS generates if set to True
-  debug_mode: True
-  # the configuration for the Stream A (low) and Stream B (high)
-  high_qp: 
-  - 24
-  - 26
-  - 28
-  high_resolution: 
-  - 0.2
-  - 0.3
-  - 0.4
-  - 0.5
-  - 0.6
-  - 0.7
-  - 0.8
-  - 0.9
-  - 1.0
-  low_qp:
-  - 30
-  - 32 
-  - 34
-  low_resolution: 
-  - 0.1
-  - 0.2
-  - 0.3
-  - 0.4
-  - 0.5
-  - 0.6
-  - 0.7
-  - 0.8
+  - method: gt
+    low_qp: 24
+    low_resolution: 1
+  - method: dds
+    mode: emulation
+    debug_mode: false
+    high_qp:
+      - 26
+    high_resolution:
+      - 0.3
+    low_qp:
+      - 32
+    low_resolution:
+      - 0.2

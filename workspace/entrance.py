@@ -88,20 +88,29 @@ def execute_single(single_instance):
         prune_score = single_instance['prune_score']
         objfilter_iou = single_instance['objfilter_iou']
         size_obj = single_instance['size_obj']
+        adaptive_mode = single_instance['adaptive_mode']
+        adaptive_test_display = single_instance['adaptive_test_display']
 
         # skip if result file already exists
         # You could customize the way to serialize the parameters into filename by yourself
-        result_file_name = (f"{video_name}_dds_{low_res}_{high_res}_{low_qp}_{high_qp}_"
-                            f"{rpn_enlarge_ratio}_twosides_batch_{batch_size}_"
-                            f"{prune_score}_{objfilter_iou}_{size_obj}")
+        if (adaptive_mode):
+            result_file_name = (f"{video_name}_dds_adaptive_{adaptive_test_display}_"
+                                f"{rpn_enlarge_ratio}_twosides_batch_{batch_size}_"
+                                f"{prune_score}_{objfilter_iou}_{size_obj}")
+        else:
+            result_file_name = (f"{video_name}_dds_{low_res}_{high_res}_{low_qp}_{high_qp}_"
+                                f"{rpn_enlarge_ratio}_twosides_batch_{batch_size}_"
+                                f"{prune_score}_{objfilter_iou}_{size_obj}")
         if single_instance['overwrite'] == False and os.path.exists(os.path.join("results", result_file_name)):
             print(f"Skipping {result_file_name}")
         else:
+            single_instance['real_video_name'] = video_name
             single_instance['video_name'] = f'results/{result_file_name}'
             single_instance['high_images_path'] = f'{original_images_dir}'
             single_instance['outfile'] = 'stats'
             single_instance['ground_truth'] = f'results/{video_name}_gt'
             single_instance['low_results_path'] = f'results/{video_name}_mpeg_{low_res}_{low_qp}'
+            single_instance['profile_folder_path'] = f'{data_dir}/{video_name}'
 
             if single_instance["mode"] == 'implementation':
                 assert single_instance['hname'] != False, "Must provide the server address for implementation, abort."

@@ -132,13 +132,13 @@ dataset/rene*
 workspace/frozen_inference_graph.pb
 
 # do not commit old configuration
-workspace/configuration-old.yml
+workspace/configuration-*
 
 # do not commit experiment results
 workspace/results
 workspace/debugging
 workspace/stats
-workspace/archive
+workspace/results_archive
 
 # do not commit deprecated tools
 workspace/deprecated

@@ -5,7 +5,7 @@ import requests
 import json
 from dds_utils import (Results, read_results_dict, cleanup, Region,
                        compute_regions_size, extract_images_from_video,
-                       merge_boxes_in_results)
+                       merge_boxes_in_results, read_bandwidth_limit, get_best_configuration)
 import yaml
 
 
@@ -103,13 +103,20 @@ class Client:
 
     def analyze_video_emulate(self, video_name, high_images_path,
                               enforce_iframes, low_results_path=None,
-                              debug_mode=False):
+                              debug_mode=False, adaptive_mode=False):
         final_results = Results()
         low_phase_results = Results()
         high_phase_results = Results()
 
         number_of_frames = len(
             [x for x in os.listdir(high_images_path) if "png" in x])
+
+        bandwidth_limit_dict = None
+        profile_no = None
+        bandwidth_limit = None
+        if adaptive_mode:
+            bandwidth_limit_dict = read_bandwidth_limit(f'{self.config.profile_folder_path}/bandwidthLimit.yml')
+            profile_no = 0
 
         low_results_dict = None
         if low_results_path:
@@ -120,7 +127,32 @@ class Client:
         for i in range(0, number_of_frames, self.config.batch_size):
             start_fid = i
             end_fid = min(number_of_frames, i + self.config.batch_size)
-            self.logger.info(f"Processing batch from {start_fid} to {end_fid}")
+
+            if (adaptive_mode):
+                # If reach the next segment
+                if (profile_no < len(bandwidth_limit_dict['frame_id'])):
+                    if (start_fid >= bandwidth_limit_dict['frame_id'][profile_no]):
+                        bandwidth_limit = bandwidth_limit_dict['bandwidth_limit'][profile_no]
+                        try:
+                            low_res_best, low_qp_best, high_res_best, high_qp_best = get_best_configuration(bandwidth_limit, f'{self.config.profile_folder_path}/profile-{profile_no}.csv')
+                        except:
+                            raise RuntimeError(f"Cannot get the best configuration at segment {profile_no} after frame {start_fid} with a bandwidth limit of {bandwidth_limit}. Aborting...")
+                    
+                        self.config.low_qp = low_qp_best
+                        self.config.low_resolution = low_res_best
+                        self.config.high_qp = high_qp_best
+                        self.config.high_resolution = high_res_best
+
+                        video_name = (f"results/{self.config.real_video_name}_dds_{self.config.low_resolution}_{self.config.high_resolution}_{self.config.low_qp}_{self.config.high_qp}_"
+                            f"{self.config.rpn_enlarge_ratio}_twosides_batch_{self.config.batch_size}_"
+                            f"{self.config.prune_score}_{self.config.objfilter_iou}_{self.config.size_obj}")
+                        
+                        low_results_path = f'results/{self.config.real_video_name}_mpeg_{self.config.low_resolution}_{self.config.low_qp}'
+                        low_results_dict = read_results_dict(low_results_path)
+
+                        profile_no += 1
+
+            self.logger.info(f"Processing batch from {start_fid} to {end_fid} with parameters {self.config.low_resolution}, {self.config.low_qp}, {self.config.high_resolution}, {self.config.high_qp}")           
 
             # Encode frames in batch and get size
             # Make temporary frames to downsize complete frames
@@ -185,6 +217,11 @@ class Client:
         final_results.fill_gaps(number_of_frames)
 
         # Write results
+        if (adaptive_mode):
+            video_name = (f"results/{self.config.real_video_name}_dds_adaptive_{self.config.adaptive_test_display}_"
+                            f"{self.config.rpn_enlarge_ratio}_twosides_batch_{self.config.batch_size}_"
+                            f"{self.config.prune_score}_{self.config.objfilter_iou}_{self.config.size_obj}")
+
         final_results.write(f"{video_name}")
 
         self.logger.info(f"Writing results for {video_name}")

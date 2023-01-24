@@ -1,9 +1,11 @@
 import re
 import os
 import csv
+import yaml
 import shutil
 import subprocess
 import numpy as np
+import pandas as pd
 import cv2 as cv
 import networkx
 from networkx.algorithms.components.connected import connected_components
@@ -952,3 +954,13 @@ def visualize_single_regions(region, images_direc, label="debugging"):
     cv.imshow(label, image_np)
     cv.waitKey()
     cv.destroyAllWindows()
+
+def read_bandwidth_limit(bandwidth_limit_path):
+    with open(bandwidth_limit_path, 'r') as config:
+        bandwidth_limits = yaml.load(config, Loader=yaml.FullLoader)
+    return bandwidth_limits
+
+def get_best_configuration(bandwidth_limit, profile_path):
+    profile = pd.read_csv(profile_path)
+    best_profile = profile.loc[profile['bandwidth'] < bandwidth_limit].iloc[-1]
+    return (best_profile['low-resolution'], best_profile['low_qp'], best_profile['high-resolution'], best_profile['high_qp'])
