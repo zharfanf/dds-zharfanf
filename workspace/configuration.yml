@@ -30,19 +30,34 @@ default:
   ground_truth: false
   mode: emulation
   adaptive_mode: true
-  adaptive_test_display: 2738.25390625
+  adaptive_test_display: SEPARATED-10500
+  profile_folder_name: profile-separated
 instances:
   - method: gt
     low_qp: 24
     low_resolution: 1
+  - method: mpeg
+    low_qp:
+      - 30
+      - 32
+      - 34
+    low_resolution:
+      - 0.1
+      - 0.2
+      - 0.3
+      - 0.4
+      - 0.5
+      - 0.6
+      - 0.7
+      - 0.8
   - method: dds
     mode: emulation
     debug_mode: false
     high_qp:
-      - 26
+      - 24
     high_resolution:
-      - 0.3
+      - 1
     low_qp:
-      - 32
+      - 30
     low_resolution:
-      - 0.2
+      - 0.8

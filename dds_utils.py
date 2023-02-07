@@ -850,17 +850,17 @@ def evaluate(max_fid, map_dd, map_gt, gt_confid_thresh, mpeg_confid_thresh,
 
 
 def write_stats_txt(fname, vid_name, config, f1, stats,
-                    bw, frames_count, mode):
+                    bw, frames_count, first_bandwidth_limit, mode):
     header = ("video-name,low-resolution,high-resolution,low_qp,high_qp,"
               "batch-size,low-threshold,high-threshold,"
               "tracker-length,TP,FP,FN,F1,"
-              "low-size,high-size,total-size,frames,mode")
+              "low-size,high-size,total-size,frames,bandwidth-limit,mode")
     stats = (f"{vid_name},{config.low_resolution},{config.high_resolution},"
              f"{config.low_qp},{config.high_qp},{config.batch_size},"
              f"{config.low_threshold},{config.high_threshold},"
              f"{config.tracker_length},{stats[0]},{stats[1]},{stats[2]},"
              f"{f1},{bw[0]},{bw[1]},{bw[0] + bw[1]},"
-             f"{frames_count},{mode}")
+             f"{frames_count},{first_bandwidth_limit},{mode}")
 
     if not os.path.isfile(fname):
         str_to_write = f"{header}\n{stats}\n"
@@ -872,17 +872,17 @@ def write_stats_txt(fname, vid_name, config, f1, stats,
 
 
 def write_stats_csv(fname, vid_name, config, f1, stats, bw,
-                    frames_count, mode):
+                    frames_count, first_bandwidth_limit, mode):
     header = ("video-name,low-resolution,high-resolution,low-qp,high-qp,"
               "batch-size,low-threshold,high-threshold,"
               "tracker-length,TP,FP,FN,F1,"
-              "low-size,high-size,total-size,frames,mode").split(",")
+              "low-size,high-size,total-size,frames,bandwidth-limit,mode").split(",")
     stats = (f"{vid_name},{config.low_resolution},{config.high_resolution},"
              f"{config.low_qp},{config.high_qp},{config.batch_size},"
              f"{config.low_threshold},{config.high_threshold},"
              f"{config.tracker_length},{stats[0]},{stats[1]},{stats[2]},"
              f"{f1},{bw[0]},{bw[1]},{bw[0] + bw[1]},"
-             f"{frames_count},{mode}").split(",")
+             f"{frames_count},{first_bandwidth_limit},{mode}").split(",")
 
     results_files = open(fname, "a")
     csv_writer = csv.writer(results_files)
@@ -894,13 +894,13 @@ def write_stats_csv(fname, vid_name, config, f1, stats, bw,
 
 
 def write_stats(fname, vid_name, config, f1, stats, bw,
-                frames_count, mode):
+                frames_count, first_bandwidth_limit, mode):
     if re.match(r"\w+[.]csv\Z", fname):
         write_stats_csv(fname, vid_name, config, f1, stats, bw,
-                        frames_count, mode)
+                        frames_count, first_bandwidth_limit, mode)
     else:
         write_stats_txt(fname, vid_name, config, f1, stats, bw,
-                        frames_count, mode)
+                        frames_count, first_bandwidth_limit, mode)
 
 
 def visualize_regions(results, images_direc,

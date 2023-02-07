@@ -4,7 +4,7 @@ import logging
 from backend.server import Server
 from frontend.client import Client
 from dds_utils import (ServerConfig, read_results_dict,
-                       evaluate, write_stats)
+                       evaluate, write_stats, read_bandwidth_limit)
 import sys
 
 from munch import *
@@ -37,10 +37,20 @@ def main(args):
     server = None
     mode = None
     results, bw = None, None
+
+    bandwidth_limit_dict = None
+
     if args.simulate:
         raise NotImplementedError("We do not support simulation anymore")
     elif not args.simulate and not args.hname and args.high_resolution != -1:
         mode = "emulation"
+
+        if (args.adaptive_mode):
+            mode = "emulation-adaptive"
+            bandwidth_limit_dict = read_bandwidth_limit(f'{args.profile_folder_path}/{args.profile_folder_name}/bandwidthLimit.yml')
+            if (len(bandwidth_limit_dict['frame_id']) > 1):
+                mode = "emulation-adaptive-separated"
+
         logger.warning(f"Running DDS in EMULATION mode on {args.video_name}")
         server = Server(config)
 
@@ -49,7 +59,8 @@ def main(args):
         # Run emulation
         results, bw = client.analyze_video_emulate(
             args.video_name, args.high_images_path,
-            args.enforce_iframes, args.low_results_path, args.debug_mode, args.adaptive_mode)
+            args.enforce_iframes, args.low_results_path, args.debug_mode, 
+            args.adaptive_mode, bandwidth_limit_dict)
     elif not args.simulate and not args.hname:
         mode = "mpeg"
         logger.warning(f"Running in MPEG mode with resolution "
@@ -93,8 +104,12 @@ def main(args):
         logger.info("No groundtruth given skipping evalution")
 
     # Write evaluation results to file
-    write_stats(args.outfile, f"{args.video_name}", config, f1,
-                stats, bw, number_of_frames, mode)
+    if (bandwidth_limit_dict):
+        write_stats(args.outfile, f"{args.video_name}", config, f1,
+                stats, bw, number_of_frames, bandwidth_limit_dict['bandwidth_limit'][0], mode)
+    else:
+        write_stats(args.outfile, f"{args.video_name}", config, f1,
+                stats, bw, number_of_frames, -1, mode)
 
 
 if __name__ == "__main__":

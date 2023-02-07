@@ -5,7 +5,7 @@ import requests
 import json
 from dds_utils import (Results, read_results_dict, cleanup, Region,
                        compute_regions_size, extract_images_from_video,
-                       merge_boxes_in_results, read_bandwidth_limit, get_best_configuration)
+                       merge_boxes_in_results, get_best_configuration)
 import yaml
 
 
@@ -103,7 +103,7 @@ class Client:
 
     def analyze_video_emulate(self, video_name, high_images_path,
                               enforce_iframes, low_results_path=None,
-                              debug_mode=False, adaptive_mode=False):
+                              debug_mode=False, adaptive_mode=False, bandwidth_limit_dict=None):
         final_results = Results()
         low_phase_results = Results()
         high_phase_results = Results()
@@ -111,11 +111,9 @@ class Client:
         number_of_frames = len(
             [x for x in os.listdir(high_images_path) if "png" in x])
 
-        bandwidth_limit_dict = None
         profile_no = None
         bandwidth_limit = None
         if adaptive_mode:
-            bandwidth_limit_dict = read_bandwidth_limit(f'{self.config.profile_folder_path}/bandwidthLimit.yml')
             profile_no = 0
 
         low_results_dict = None
@@ -134,7 +132,7 @@ class Client:
                     if (start_fid >= bandwidth_limit_dict['frame_id'][profile_no]):
                         bandwidth_limit = bandwidth_limit_dict['bandwidth_limit'][profile_no]
                         try:
-                            low_res_best, low_qp_best, high_res_best, high_qp_best = get_best_configuration(bandwidth_limit, f'{self.config.profile_folder_path}/profile-{profile_no}.csv')
+                            low_res_best, low_qp_best, high_res_best, high_qp_best = get_best_configuration(bandwidth_limit, f'{self.config.profile_folder_path}/{self.config.profile_folder_name}/profile-{profile_no}.csv')
                         except:
                             raise RuntimeError(f"Cannot get the best configuration at segment {profile_no} after frame {start_fid} with a bandwidth limit of {bandwidth_limit}. Aborting...")
                     
