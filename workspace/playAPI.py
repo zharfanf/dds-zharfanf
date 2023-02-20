@@ -17,7 +17,7 @@ def index():
         yaml.dump(bandwidth_dict, outfile, default_flow_style=False)
     
     # Updating the configuration file
-    os.system("yq -i '.default.video_name = %s'" %(video_name))
+    os.system("yq -i '.default.video_name = %s' configuration.yml" %(video_name))
 
     # Executing the program
     subprocess.run(["python", "entrance.py"])
