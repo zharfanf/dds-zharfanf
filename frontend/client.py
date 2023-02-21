@@ -136,6 +136,8 @@ class Client:
                         except:
                             raise RuntimeError(f"Cannot get the best configuration at segment {profile_no} after frame {start_fid} with a bandwidth limit of {bandwidth_limit}. Aborting...")
                     
+                        # here calling the api to limit the bandwidth
+                        
                         self.config.low_qp = low_qp_best
                         self.config.low_resolution = low_res_best
                         self.config.high_qp = high_qp_best
@@ -277,19 +279,55 @@ class Client:
         return results
 
     def analyze_video(
-            self, vid_name, raw_images, config, enforce_iframes):
+            self, vid_name, raw_images, config, enforce_iframes, adaptive_mode=False, bandwidth_limit_dict=None):
         final_results = Results()
         all_required_regions = Results()
         low_phase_size = 0
         high_phase_size = 0
         nframes = sum(map(lambda e: "png" in e, os.listdir(raw_images)))
+        profile_no = None
+        bandwidth_limit = None
+        if adaptive_mode:
+            profile_no = 0
+
+        low_results_dict = None
+        if low_results_path:
+            low_results_dict = read_results_dict(low_results_path)
 
         self.init_server(nframes)
 
         for i in range(0, nframes, self.config.batch_size):
             start_frame = i
             end_frame = min(nframes, i + self.config.batch_size)
-            self.logger.info(f"Processing frames {start_frame} to {end_frame}")
+            if (adaptive_mode):
+                # If reach the next segment
+                if (profile_no < len(bandwidth_limit_dict['frame_id'])):
+                    if (start_fid >= bandwidth_limit_dict['frame_id'][profile_no]):
+                        bandwidth_limit = bandwidth_limit_dict['bandwidth_limit'][profile_no]
+                        try:
+                            low_res_best, low_qp_best, high_res_best, high_qp_best = get_best_configuration(bandwidth_limit, f'{self.config.profile_folder_path}/{self.config.profile_folder_name}/profile-{profile_no}.csv')
+                        except:
+                            raise RuntimeError(f"Cannot get the best configuration at segment {profile_no} after frame {start_fid} with a bandwidth limit of {bandwidth_limit}. Aborting...")
+                    
+                        # here calling the api to limit the bandwidth
+                        os.system("curl http://10.140.83.205:5001?bandwidth=%skbit&ipAddress=%s" %(bandwidth_limit, address))
+                        self.config.low_qp = low_qp_best
+                        self.config.low_resolution = low_res_best
+                        self.config.high_qp = high_qp_best
+                        self.config.high_resolution = high_res_best
+
+                        video_name = (f"results/{self.config.real_video_name}_dds_{self.config.low_resolution}_{self.config.high_resolution}_{self.config.low_qp}_{self.config.high_qp}_"
+                            f"{self.config.rpn_enlarge_ratio}_twosides_batch_{self.config.batch_size}_"
+                            f"{self.config.prune_score}_{self.config.objfilter_iou}_{self.config.size_obj}")
+                        
+                        low_results_path = f'results/{self.config.real_video_name}_mpeg_{self.config.low_resolution}_{self.config.low_qp}'
+                        low_results_dict = read_results_dict(low_results_path)
+
+                        profile_no += 1
+
+            self.logger.info(f"Processing batch from {start_frame} to {end_frame} with parameters {self.config.low_resolution}, {self.config.low_qp}, {self.config.high_resolution}, {self.config.high_qp}")           
+
+            # self.logger.info(f"Processing frames {start_frame} to {end_frame}")
 
             # First iteration
             req_regions = Results()
@@ -335,6 +373,11 @@ class Client:
 
         final_results.combine_results(
             all_required_regions, self.config.intersection_threshold)
+        
+        if (adaptive_mode):
+            video_name = (f"results/{self.config.real_video_name}_dds_adaptive_{self.config.adaptive_test_display}_"
+                            f"{self.config.rpn_enlarge_ratio}_twosides_batch_{self.config.batch_size}_"
+                            f"{self.config.prune_score}_{self.config.objfilter_iou}_{self.config.size_obj}")
 
         final_results.write(f"{vid_name}")
 
