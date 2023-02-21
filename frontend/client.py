@@ -302,7 +302,7 @@ class Client:
             if (adaptive_mode):
                 # If reach the next segment
                 if (profile_no < len(bandwidth_limit_dict['frame_id'])):
-                    if (start_fid >= bandwidth_limit_dict['frame_id'][profile_no]):
+                    if (start_frame >= bandwidth_limit_dict['frame_id'][profile_no]):
                         bandwidth_limit = bandwidth_limit_dict['bandwidth_limit'][profile_no]
                         try:
                             low_res_best, low_qp_best, high_res_best, high_qp_best = get_best_configuration(bandwidth_limit, f'{self.config.profile_folder_path}/{self.config.profile_folder_name}/profile-{profile_no}.csv')
