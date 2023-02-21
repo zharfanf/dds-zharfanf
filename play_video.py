@@ -73,6 +73,13 @@ def main(args):
             args.video_name, args.high_images_path, args.enforce_iframes)
     elif not args.simulate and args.hname:
         mode = "implementation"
+        
+        if (args.adaptive_mode):
+            mode = "simulation-adaptive"
+            bandwidth_limit_dict = read_bandwidth_limit(f'{args.profile_folder_path}/{args.profile_folder_name}/bandwidthLimit.yml')
+            if (len(bandwidth_limit_dict['frame_id']) > 1):
+                mode = "simulation-adaptive-separated"
+
         logger.warning(
             f"Running DDS using a server client implementation with "
             f"server running on {args.hname} using video {args.hname}")
