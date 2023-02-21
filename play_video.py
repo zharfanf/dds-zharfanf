@@ -87,7 +87,7 @@ def main(args):
         client = Client(args.hname, config, server)
         results, bw = client.analyze_video(
             args.video_name, args.high_images_path, config,
-            args.enforce_iframes)
+            args.enforce_iframes, args.low_results_path, args.adaptive_mode, bandwidth_limit_dict)
 
     # Evaluation and writing results
     # Read Groundtruth results

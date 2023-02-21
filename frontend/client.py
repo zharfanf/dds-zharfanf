@@ -279,7 +279,7 @@ class Client:
         return results
 
     def analyze_video(
-            self, vid_name, raw_images, config, enforce_iframes, adaptive_mode=False, bandwidth_limit_dict=None):
+            self, vid_name, raw_images, config, enforce_iframes, low_results_path=None, adaptive_mode=False, bandwidth_limit_dict=None):
         final_results = Results()
         all_required_regions = Results()
         low_phase_size = 0
@@ -310,7 +310,7 @@ class Client:
                             raise RuntimeError(f"Cannot get the best configuration at segment {profile_no} after frame {start_fid} with a bandwidth limit of {bandwidth_limit}. Aborting...")
                     
                         # here calling the api to limit the bandwidth
-                        os.system("curl http://10.140.83.205:5001?bandwidth=%skbit&ipAddress=%s" %(bandwidth_limit, address))
+                        os.system("curl http://10.140.83.205:5001?bandwidth=%skbit&ipAddress=" %(bandwidth_limit))
                         self.config.low_qp = low_qp_best
                         self.config.low_resolution = low_res_best
                         self.config.high_qp = high_qp_best
