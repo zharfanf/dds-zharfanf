@@ -249,8 +249,11 @@ class Client:
         encoded_vid_path = os.path.join(
             vid_name + "-base-phase-cropped", "temp.mp4")
         video_to_send = {"media": open(encoded_vid_path, "rb")}
+        headers = self.session.headers
+        endIdx = vid_name.find("_dds")
+        headers["vid_name"] = vid_name[8:endIdx]
         response = self.session.post(
-            "http://" + self.hname + "/low", files=video_to_send)
+            "http://" + self.hname + "/low", files=video_to_send, headers=headers)
         response_json = json.loads(response.text)
 
         results = Results()
@@ -267,8 +270,11 @@ class Client:
     def get_second_phase_results(self, vid_name):
         encoded_vid_path = os.path.join(vid_name + "-cropped", "temp.mp4")
         video_to_send = {"media": open(encoded_vid_path, "rb")}
+        headers = self.session.headers
+        endIdx = vid_name.find("_dds")
+        headers["vid_name"] = vid_name[8:endIdx]
         response = self.session.post(
-            "http://" + self.hname + "/high", files=video_to_send)
+            "http://" + self.hname + "/high", files=video_to_send, headers=headers)
         response_json = json.loads(response.text)
 
         results = Results()
@@ -310,7 +316,7 @@ class Client:
                             raise RuntimeError(f"Cannot get the best configuration at segment {profile_no} after frame {start_fid} with a bandwidth limit of {bandwidth_limit}. Aborting...")
                     
                         # here calling the api to limit the bandwidth
-                        os.system("curl http://10.140.83.205:5001?bandwidth=%skbit&ipAddress=" %(bandwidth_limit))
+                        os.system("curl \"http://10.140.83.205:5001?bandwidth=%skbit&ipAddress=\"" %(bandwidth_limit))
                         self.config.low_qp = low_qp_best
                         self.config.low_resolution = low_res_best
                         self.config.high_qp = high_qp_best
