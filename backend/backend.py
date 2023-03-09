@@ -22,24 +22,27 @@ def index():
 @app.route("/init", methods=["POST"])
 def initialize_server():
     args = yaml.load(request.data, Loader=yaml.SafeLoader)
+    vid_name = request.headers["vid_name"]
     global server
     if not server:
         logging.basicConfig(
             format="%(name)s -- %(levelname)s -- %(lineno)s -- %(message)s",
             level="INFO")
         server = Server(args, args["nframes"])
-        os.makedirs("server_temp", exist_ok=True)
-        os.makedirs("server_temp-cropped", exist_ok=True)
+        os.makedirs("server_temp-%s" %(vid_name), exist_ok=True)
+        os.makedirs("server_temp-%s-cropped" %(vid_name), exist_ok=True)
         return "New Init"
     else:
-        server.reset_state(int(args["nframes"]))
+        server.reset_state(int(args["nframes"]), vid_name)
         return "Reset"
 
 
 @app.route("/low", methods=["POST"])
 def low_query():
     file_data = request.files["media"]
-    results = server.perform_low_query(file_data)
+    vid_name = request.headers["vid_name"]
+    # results = server.perform_low_query(file_data)
+    results = server.perform_low_query_experiment(file_data, vid_name)
 
     return jsonify(results)
 
@@ -47,6 +50,8 @@ def low_query():
 @app.route("/high", methods=["POST"])
 def high_query():
     file_data = request.files["media"]
-    results = server.perform_high_query(file_data)
+    vid_name = request.headers["vid_name"]
+    # results = server.perform_high_query(file_data)
+    results = server.perform_high_query_experiment(file_data, vid_name)
 
     return jsonify(results)

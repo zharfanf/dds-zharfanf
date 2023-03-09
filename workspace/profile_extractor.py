@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 # stats_path = 'results_archive/01-02-2-rene/stats'
-videos = ["rene", "uav-1", "uav-2", "thailand-1st-half"]
+videos = ["rene", "uav-1"]
 for video_name in videos:
     dirName = "./profile-%s/profile-separated/" % (video_name)
     os.makedirs(dirName)
@@ -19,7 +19,7 @@ for video_name in videos:
 
         stats_dds = stats[stats['mode'] == 'emulation']
         bandwidth_f1 = stats_dds.sort_values(by=['total-size'])
-        bandwidth_f1['bandwidth'] = bandwidth_f1['total-size'] * 8 / 1024 / duration
+        bandwidth_f1['bandwidth'] = bandwidth_f1['total-size'] * 8 / 1024 / (duration/20)
 
         bandwidth_f1_remove_fluc = bandwidth_f1.copy()
 

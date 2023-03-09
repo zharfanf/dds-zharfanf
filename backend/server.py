@@ -2,8 +2,8 @@ import os
 import shutil
 import logging
 import cv2 as cv
-from dds_utils import (Results, Region, calc_iou, merge_images,
-                       extract_images_from_video, merge_boxes_in_results,
+from dds_utils import (Results, Region, calc_iou, merge_images_experiment,
+                       extract_images_from_video, extract_images_from_video_experiment, merge_boxes_in_results,
                        compute_area_of_frame, calc_area, read_results_dict)
 from .object_detector import Detector
 
@@ -28,20 +28,28 @@ class Server:
 
         self.logger.info("Server started")
 
-    def reset_state(self, nframes):
+    def reset_state(self, nframes, vid_name):
         self.curr_fid = 0
         self.nframes = nframes
         self.last_requested_regions = None
-        for f in os.listdir("server_temp"):
-            os.remove(os.path.join("server_temp", f))
-        for f in os.listdir("server_temp-cropped"):
-            os.remove(os.path.join("server_temp-cropped", f))
+        for f in os.listdir("server_temp-%s" %(vid_name)):
+            os.remove(os.path.join("server_temp-%s" %(vid_name), f))
+        for f in os.listdir("server_temp-%s-cropped" %(vid_name)):
+            os.remove(os.path.join("server_temp-%s-cropped" %(vid_name), f))
 
     def perform_server_cleanup(self):
         for f in os.listdir("server_temp"):
             os.remove(os.path.join("server_temp", f))
         for f in os.listdir("server_temp-cropped"):
             os.remove(os.path.join("server_temp-cropped", f))
+    
+    def perform_server_cleanup_experiment(self, vid_name):
+        for f in os.listdir("server_temp-%s" %(vid_name)):
+            if("png" in f):
+                os.remove(os.path.join("server_temp-%s" %(vid_name), f))
+        for f in os.listdir("server_temp-%s-cropped" %(vid_name)):
+            if("png" in f):
+                os.remove(os.path.join("server_temp-%s-cropped" %(vid_name), f))
 
     def perform_detection(self, images_direc, resolution, fnames=None,
                           images=None):
@@ -75,6 +83,9 @@ class Server:
                 final_results.append(r)
                 frame_with_no_results = False
             for label, conf, (x, y, w, h) in rpn_results:
+                if (self.config.min_object_size and
+                        w * h < self.config.min_object_size) or w * h == 0.0:
+                    continue
                 r = Region(fid, x, y, w, h, conf, label,
                            resolution, origin="generic")
                 rpn_regions.append(r)
@@ -86,7 +97,54 @@ class Server:
             if frame_with_no_results:
                 final_results.append(
                     Region(fid, 0, 0, 0, 0, 0.1, "no obj", resolution))
+        return final_results, rpn_regions
+    
+    def perform_detection_experiment(self, images_direc, resolution, fnames=None,
+                          images=None):
+        final_results = Results()
+        rpn_regions = Results()
 
+        if fnames is None:
+            fnames = sorted(os.listdir(images_direc))
+        self.logger.info(f"Running inference on {len(fnames)} frames")
+        for fname in fnames:
+            if "png" not in fname:
+                continue
+            fid = int(fname.split(".")[0])
+            image = None
+            if images:
+                image = images[fid]
+            else:
+                image_path = os.path.join(images_direc, fname)
+                image = cv.imread(image_path)
+            image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+
+            detection_results, rpn_results = (
+                self.detector.infer(image))
+            frame_with_no_results = True
+            for label, conf, (x, y, w, h) in detection_results:
+                if (self.config.min_object_size and
+                        w * h < self.config.min_object_size) or w * h == 0.0:
+                    continue
+                r = Region(fid, x, y, w, h, conf, label,
+                           resolution, origin="mpeg")
+                final_results.append(r)
+                frame_with_no_results = False
+            for label, conf, (x, y, w, h) in rpn_results:
+                if (self.config.min_object_size and
+                        w * h < self.config.min_object_size) or w * h == 0.0:
+                    continue
+                r = Region(fid, x, y, w, h, conf, label,
+                           resolution, origin="generic")
+                rpn_regions.append(r)
+                frame_with_no_results = False
+            self.logger.debug(
+                f"Got {len(final_results)} results "
+                f"and {len(rpn_regions)} for {fname}")
+
+            if frame_with_no_results:
+                final_results.append(
+                    Region(fid, 0, 0, 0, 0, 0.1, "no obj", resolution))
         return final_results, rpn_regions
 
     def get_regions_to_query(self, rpn_regions, detections):
@@ -135,11 +193,19 @@ class Server:
                          f"{self.config.high_threshold}")
         # Extract relevant results
         for fid in range(start_fid, end_fid):
-            fid_results = results_dict[fid]
-            for single_result in fid_results:
-                single_result.origin = "low-res"
-                batch_results.add_single_result(
-                    single_result, self.config.intersection_threshold)
+            try:
+                fid_results = results_dict[fid]
+                for single_result in fid_results:
+                    single_result.origin = "low-res"
+                    batch_results.add_single_result(
+                        single_result, self.config.intersection_threshold)
+            except KeyError:
+                pass
+            # fid_results = results_dict[fid]
+            # for single_result in fid_results:
+            #     single_result.origin = "low-res"
+            #     batch_results.add_single_result(
+            #         single_result, self.config.intersection_threshold)
 
         detections = Results()
         rpn_regions = Results()
@@ -154,13 +220,12 @@ class Server:
                     single_result, self.config.intersection_threshold)
 
         regions_to_query = self.get_regions_to_query(rpn_regions, detections)
-
         return detections, regions_to_query
 
     def emulate_high_query(self, vid_name, low_images_direc, req_regions):
         images_direc = vid_name + "-cropped"
         # Extract images from encoded video
-        extract_images_from_video(images_direc, req_regions)
+        extract_images_from_video_experiment(images_direc, req_regions)
 
         if not os.path.isdir(images_direc):
             self.logger.error("Images directory was not found but the "
@@ -169,15 +234,16 @@ class Server:
 
         fnames = sorted([f for f in os.listdir(images_direc) if "png" in f])
 
+
         # Make seperate directory and copy all images to that directory
         merged_images_direc = os.path.join(images_direc, "merged")
         os.makedirs(merged_images_direc, exist_ok=True)
         for img in fnames:
             shutil.copy(os.path.join(images_direc, img), merged_images_direc)
 
-        merged_images = merge_images(
+        merged_images = merge_images_experiment(
             merged_images_direc, low_images_direc, req_regions)
-        results, _ = self.perform_detection(
+        results, _ = self.perform_detection_experiment(
             merged_images_direc, self.config.high_resolution, fnames,
             merged_images)
 
@@ -220,6 +286,7 @@ class Server:
         end_fid = min(self.curr_fid + self.config.batch_size, self.nframes)
         self.logger.info(f"Processing frames from {start_fid} to {end_fid}")
         req_regions = Results()
+        # what is this? got it
         for fid in range(start_fid, end_fid):
             req_regions.append(
                 Region(fid, 0, 0, 1, 1, 1.0, 2, self.config.low_resolution))
@@ -232,6 +299,8 @@ class Server:
         batch_results = Results()
         batch_results.combine_results(
             results, self.config.intersection_threshold)
+        
+        # print(batch_results.regions_dict)
 
         # need to merge this because all previous experiments assumed
         # that low (mpeg) results are already merged
@@ -263,6 +332,62 @@ class Server:
             "req_regions": req_regions_list
         }
 
+    def perform_low_query_experiment(self, vid_data, vid_name):
+        # Write video to file
+        with open(os.path.join("server_temp-%s" %(vid_name), "temp.mp4"), "wb") as f:
+            f.write(vid_data.read())
+
+        # Extract images
+        # Make req regions for extraction
+        start_fid = self.curr_fid
+        end_fid = min(self.curr_fid + self.config.batch_size, self.nframes)
+        self.logger.info(f"Processing frames from {start_fid} to {end_fid} from {vid_name}")
+        req_regions = Results()
+        for fid in range(start_fid, end_fid):
+            req_regions.append(
+                Region(fid, 0, 0, 1, 1, 1.0, 2, self.config.low_resolution))
+        extract_images_from_video_experiment("server_temp-%s" %(vid_name), req_regions)
+        fnames = [f for f in os.listdir("server_temp-%s" %(vid_name)) if "png" in f]
+
+        results, rpn = self.perform_detection_experiment(
+            "server_temp-%s" %(vid_name), self.config.low_resolution, fnames)
+
+        batch_results = Results()
+        batch_results.combine_results(
+            results, self.config.intersection_threshold)
+        
+        # print(batch_results.regions_dict)
+
+        # need to merge this because all previous experiments assumed
+        # that low (mpeg) results are already merged
+        batch_results = merge_boxes_in_results(
+            batch_results.regions_dict, 0.3, 0.3)
+
+        batch_results.combine_results(
+            rpn, self.config.intersection_threshold)
+
+        detections, regions_to_query = self.simulate_low_query(
+            start_fid, end_fid, "server_temp-%s" %(vid_name), batch_results.regions_dict,
+            False, self.config.rpn_enlarge_ratio, False)
+
+        self.last_requested_regions = regions_to_query
+        self.curr_fid = end_fid
+
+        # Make dictionary to be sent back
+        detections_list = []
+        for r in detections.regions:
+            detections_list.append(
+                [r.fid, r.x, r.y, r.w, r.h, r.conf, r.label])
+        req_regions_list = []
+        for r in regions_to_query.regions:
+            req_regions_list.append(
+                [r.fid, r.x, r.y, r.w, r.h, r.conf, r.label])
+
+        return {
+            "results": detections_list,
+            "req_regions": req_regions_list
+        }
+        
     def perform_high_query(self, file_data):
         low_images_direc = "server_temp"
         cropped_images_direc = "server_temp-cropped"
@@ -279,6 +404,29 @@ class Server:
 
         # Perform server side cleanup for the next batch
         self.perform_server_cleanup()
+
+        return {
+            "results": results_list,
+            "req_region": []
+        }
+    
+    def perform_high_query_experiment(self, file_data, vid_name):
+        low_images_direc = "server_temp-%s" %(vid_name)
+        cropped_images_direc = "server_temp-%s-cropped" %(vid_name)
+
+        with open(os.path.join(cropped_images_direc, "temp.mp4"), "wb") as f:
+            f.write(file_data.read())
+
+        results = self.emulate_high_query(
+            low_images_direc, low_images_direc, self.last_requested_regions)
+
+        results_list = []
+        for r in results.regions:
+            results_list.append([r.fid, r.x, r.y, r.w, r.h, r.conf, r.label])
+
+        # Perform server side cleanup for the next batch
+        # self.perform_server_cleanup()
+        self.perform_server_cleanup_experiment(vid_name)
 
         return {
             "results": results_list,

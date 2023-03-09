@@ -9,6 +9,7 @@ import pandas as pd
 import cv2 as cv
 import networkx
 from networkx.algorithms.components.connected import connected_components
+import statistics
 
 
 class ServerConfig:
@@ -621,6 +622,45 @@ def extract_images_from_video(images_path, req_regions):
         os.rename(os.path.join(f"{fname}_temp"),
                   os.path.join(images_path, f"{str(fid).zfill(10)}.png"))
 
+def extract_images_from_video_experiment(images_path, req_regions):
+    if not os.path.isdir(images_path):
+        return
+
+    for fname in os.listdir(images_path):
+        if "png" not in fname:
+            continue
+        else:
+            os.remove(os.path.join(images_path, fname))
+    encoded_vid_path = os.path.join(images_path, "temp.mp4")
+    extacted_images_path = os.path.join(images_path, "%010d.png")
+    decoding_result = subprocess.run(["ffmpeg", "-y",
+                                      "-i", encoded_vid_path,
+                                      "-pix_fmt", "yuvj420p",
+                                      "-g", "8", "-q:v", "2",
+                                      "-vsync", "0", "-start_number", "0",
+                                      extacted_images_path],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE,
+                                     universal_newlines=True)
+    if decoding_result.returncode != 0:
+        print("DECODING FAILED")
+        print(decoding_result.stdout)
+        print(decoding_result.stderr)
+        exit()
+
+    fnames = sorted(
+        [os.path.join(images_path, name)
+         for name in os.listdir(images_path) if "png" in name])
+    fids = sorted(list(set([r.fid for r in req_regions.regions])))
+    fids_mapping = zip(fids, fnames)
+    for fname in fnames:
+        # Rename temporarily
+        os.rename(fname, f"{fname}_temp")
+
+    for fid, fname in fids_mapping:
+        os.rename(os.path.join(f"{fname}_temp"),
+                  os.path.join(images_path, f"{str(fid).zfill(10)}.png"))
+
 
 def crop_images(results, vid_name, images_direc, resolution=None):
     cached_image = None
@@ -700,6 +740,37 @@ def merge_images(cropped_images_direc, low_images_direc, req_regions):
         images[fid] = enlarged_image
     return images
 
+def merge_images_experiment(cropped_images_direc, low_images_direc, req_regions):
+    images = {}
+    for fname in os.listdir(cropped_images_direc):
+        if "png" not in fname:
+            continue
+        fid = int(fname.split(".")[0])
+
+        # Read high resolution image
+        high_image = cv.imread(os.path.join(cropped_images_direc, fname))
+        width = high_image.shape[1]
+        height = high_image.shape[0]
+
+        # Read low resolution image
+        low_image = cv.imread(os.path.join(low_images_direc, fname))
+        # Enlarge low resolution image
+        enlarged_image = cv.resize(low_image, (width, height), fx=0, fy=0,
+                                   interpolation=cv.INTER_CUBIC)
+        # Put regions in place
+        for r in req_regions.regions:
+            if fid != r.fid:
+                continue
+            x0 = int(r.x * width)
+            y0 = int(r.y * height)
+            x1 = int((r.w * width) + x0 - 1)
+            y1 = int((r.h * height) + y0 - 1)
+
+            enlarged_image[y0:y1, x0:x1, :] = high_image[y0:y1, x0:x1, :]
+        cv.imwrite(os.path.join(cropped_images_direc, fname), enlarged_image,
+                   [cv.IMWRITE_PNG_COMPRESSION, 0])
+        images[fid] = enlarged_image
+    return images
 
 def compute_regions_size(results, vid_name, images_direc, resolution, qp,
                          enforce_iframes, estimate_banwidth=True):
@@ -964,3 +1035,23 @@ def get_best_configuration(bandwidth_limit, profile_path):
     profile = pd.read_csv(profile_path)
     best_profile = profile.loc[profile['bandwidth'] < bandwidth_limit].iloc[-1]
     return (best_profile['low-resolution'], best_profile['low_qp'], best_profile['high-resolution'], best_profile['high_qp'])
+
+def get_average_bandwidth(profile_path):
+    profile = pd.read_csv(profile_path)
+    average = statistics.mean(list(profile.bandwidth))
+    return average
+    # best_bandwidth = profile.loc[profile['bandwidth'] < bandwidth_limit].iloc[-1]
+    # remaining_bandwidth = bandwidth_limit - best_bandwidth['bandwidth']
+    # largestBandwidth = float(profile.tail(1).bandwidth)
+    # isLast = best_bandwidth['bandwidth'] == largestBandwidth
+    # if(isLast):
+    #     remaining_bandwidth = 0
+    # return remaining_bandwidth, isLast
+
+def get_best_configuration_bandwidth(bandwidth_limit, profile_path):
+    profile = pd.read_csv(profile_path)
+    best_profile = profile.loc[profile['bandwidth'] < bandwidth_limit].iloc[-1]
+    remaining = bandwidth_limit - float(best_profile['bandwidth'])
+    # return (best_profile['low-resolution'], best_profile['low_qp'], best_profile['high-resolution'], best_profile['high_qp'])
+    return remaining
+
