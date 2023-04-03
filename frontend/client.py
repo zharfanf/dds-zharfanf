@@ -103,7 +103,7 @@ class Client:
 
     def analyze_video_emulate(self, video_name, high_images_path,
                               enforce_iframes, low_results_path=None,
-                              debug_mode=False, adaptive_mode=False, bandwidth_limit_dict=None):
+                              debug_mode=False, adaptive_mode=False, bandwidth_limit_dict=None, aws_mode=False):
         final_results = Results()
         low_phase_results = Results()
         high_phase_results = Results()
@@ -182,7 +182,7 @@ class Client:
                 r1, self.config.intersection_threshold)
 
             # High resolution phase
-            if len(req_regions) > 0:
+            if aws_mode and len(req_regions) > 0:
                 # Crop, compress and get size
                 regions_size, _ = compute_regions_size(
                     req_regions, video_name, high_images_path,
@@ -285,7 +285,7 @@ class Client:
         return results
 
     def analyze_video(
-            self, vid_name, raw_images, config, enforce_iframes, low_results_path=None, adaptive_mode=False, bandwidth_limit_dict=None):
+            self, vid_name, raw_images, config, enforce_iframes, low_results_path=None, adaptive_mode=False, bandwidth_limit_dict=None, aws_mode=False):
         final_results = Results()
         all_required_regions = Results()
         low_phase_size = 0
@@ -354,8 +354,11 @@ class Client:
             all_required_regions.combine_results(
                 rpn_regions, self.config.intersection_threshold)
 
+
+            # If AWStream mode is True, the following code block won't run
+            # Start of AWStream block
             # Second Iteration
-            if len(rpn_regions) > 0:
+            if aws_mode and len(rpn_regions) > 0:
                 batch_video_size, _ = compute_regions_size(
                     rpn_regions, vid_name, raw_images,
                     self.config.high_resolution, self.config.high_qp,
@@ -370,6 +373,8 @@ class Client:
 
             # Cleanup for the next batch
             cleanup(vid_name, False, start_frame, end_frame)
+
+            # End of AWStream
 
         self.logger.info(f"Merging results")
         final_results = merge_boxes_in_results(

@@ -60,7 +60,7 @@ def main(args):
         results, bw = client.analyze_video_emulate(
             args.video_name, args.high_images_path,
             args.enforce_iframes, args.low_results_path, args.debug_mode, 
-            args.adaptive_mode, bandwidth_limit_dict)
+            args.adaptive_mode, bandwidth_limit_dict, args.aws_mode)
     elif not args.simulate and not args.hname:
         mode = "mpeg"
         logger.warning(f"Running in MPEG mode with resolution "
@@ -87,7 +87,7 @@ def main(args):
         client = Client(args.hname, config, server)
         results, bw = client.analyze_video(
             args.video_name, args.high_images_path, config,
-            args.enforce_iframes, args.low_results_path, args.adaptive_mode, bandwidth_limit_dict)
+            args.enforce_iframes, args.low_results_path, args.adaptive_mode, bandwidth_limit_dict, args.aws_mode)
 
     # Evaluation and writing results
     # Read Groundtruth results
