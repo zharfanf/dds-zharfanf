@@ -915,9 +915,9 @@ def evaluate(max_fid, map_dd, map_gt, gt_confid_thresh, mpeg_confid_thresh,
     fn = sum(fn_list)
     count = sum(count_list)
     return (tp, fp, fn, count,
-            round(tp/(tp+fp), 3),
-            round(tp/(tp+fn), 3),
-            round((2.0*tp/(2.0*tp+fp+fn)), 3))
+            round((tp/(tp+fp) if (tp+fp != 0) else -1), 3),
+            round((tp/(tp+fn) if (tp+fn != 0) else -1), 3),
+            round((2.0*tp/(2.0*tp+fp+fn) if (2.0*tp+fp+fn != 0) else -1), 3))
 
 
 def write_stats_txt(fname, vid_name, config, f1, stats,
@@ -1033,7 +1033,10 @@ def read_bandwidth_limit(bandwidth_limit_path):
 
 def get_best_configuration(bandwidth_limit, profile_path):
     profile = pd.read_csv(profile_path)
-    best_profile = profile.loc[profile['bandwidth'] < bandwidth_limit].iloc[-1]
+    try:
+        best_profile = profile.loc[profile['bandwidth'] < bandwidth_limit].iloc[-1]
+    except IndexError:
+        best_profile = profile.iloc[-1]
     return (best_profile['low-resolution'], best_profile['low_qp'], best_profile['high-resolution'], best_profile['high_qp'])
 
 def get_average_bandwidth(profile_path):
@@ -1050,8 +1053,12 @@ def get_average_bandwidth(profile_path):
 
 def get_best_configuration_bandwidth(bandwidth_limit, profile_path):
     profile = pd.read_csv(profile_path)
-    best_profile = profile.loc[profile['bandwidth'] < bandwidth_limit].iloc[-1]
+    try:
+        best_profile = profile.loc[profile['bandwidth'] < bandwidth_limit].iloc[-1]
+    except IndexError:
+        best_profile = profile.iloc[-1]
     remaining = bandwidth_limit - float(best_profile['bandwidth'])
+    bestAcc = float(best_profile['F1'])
     # return (best_profile['low-resolution'], best_profile['low_qp'], best_profile['high-resolution'], best_profile['high_qp'])
-    return remaining
+    return bestAcc, remaining
 

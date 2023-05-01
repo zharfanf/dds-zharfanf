@@ -90,6 +90,7 @@ def execute_single(single_instance):
         size_obj = single_instance['size_obj']
         adaptive_mode = single_instance['adaptive_mode']
         adaptive_test_display = single_instance['adaptive_test_display']
+        aws_mode = single_instance['aws_mode']
 
         # skip if result file already exists
         # You could customize the way to serialize the parameters into filename by yourself
@@ -101,6 +102,11 @@ def execute_single(single_instance):
             result_file_name = (f"{video_name}_dds_{low_res}_{high_res}_{low_qp}_{high_qp}_"
                                 f"{rpn_enlarge_ratio}_twosides_batch_{batch_size}_"
                                 f"{prune_score}_{objfilter_iou}_{size_obj}")
+        if (aws_mode):
+            result_file_name = (f"{video_name}_aws_{low_res}_{high_res}_{low_qp}_{high_qp}_"
+                                f"{rpn_enlarge_ratio}_twosides_batch_{batch_size}_"
+                                f"{prune_score}_{objfilter_iou}_{size_obj}")
+
         if single_instance['overwrite'] == False and os.path.exists(os.path.join("results", result_file_name)):
             print(f"Skipping {result_file_name}")
         else:

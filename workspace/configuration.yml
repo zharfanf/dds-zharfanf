@@ -14,7 +14,7 @@ default:
   # overwrite existing results or not
   overwrite: False
   # the video name you want to run. Can be a list or a single string
-  video_name: thailand-3
+  video_name: coldwater-5-9
   # several configurations, a lot of them are ... just issues left over from history.
   max_object_size: 0.3
   low_threshold: 0.3
@@ -43,9 +43,9 @@ default:
   size_obj: 1.1
   # Turn on debug_mode to show what DDS sends in second iteration.
   debug_mode: False
+  aws_mode: False
   adaptive_mode: False
   adaptive_test_display: False
-  aws_mode: False
   # The path to the ground truth. Will be automatically set in entrance.py
   ground_truth: False
   mode: emulation
@@ -64,27 +64,27 @@ instances:
     # resolution is a number in (0, 1]. We will scale the width and the hight according to this factor.
     low_resolution: 1.0
   - method: mpeg
-    low_qp: [34]
-    low_resolution: [0.8]
-  # - batch_size: 5
-  #   # the configuration for the Stream A (low) and Stream B (high)
-  #   high_qp: [24]
-  #   high_resolution: [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-  #   low_qp: [30, 32, 34]
-  #   low_resolution: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
-  #   method: dds
-  #   # Two regions will be treated as the same region if the intersection-over-union (IoU) is larger than this threshold
-  #   objfilter_iou: 0.8
-  #   # The score to prune out those low-objectness-score regions. Just to control the bandwidth
-  #   prune_score: 0.5
-  #   # Deprecated parameter
-  #   rpn_enlarge_ratio: 0.0
-  #   # control the size of the object
-  #   size_obj: 0.4
-  #   # hname must be the ip:port of the server if in implementation mode
-  #   hname: False
-  #   # print the regions that DDS generates if set to True
-  #   debug_mode: True
-  #   # mode can be emulation or implementation. Emulation: trasmit the video through disk, Implementation: send the video through http protocol
-  #   mode: emulation
-  #   # bandwidth_limit: 1000 # in kbps
+    low_qp: [30, 32, 34, 36, 38]
+    low_resolution: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+  - batch_size: 5
+    # the configuration for the Stream A (low) and Stream B (high)
+    high_qp: [24, 26, 28, 30, 32]
+    high_resolution: [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    low_qp: [30, 32, 34, 36, 38]
+    low_resolution: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+    method: dds
+    # Two regions will be treated as the same region if the intersection-over-union (IoU) is larger than this threshold
+    objfilter_iou: 0.8
+    # The score to prune out those low-objectness-score regions. Just to control the bandwidth
+    prune_score: 0.5
+    # Deprecated parameter
+    rpn_enlarge_ratio: 0.0
+    # control the size of the object
+    size_obj: 0.4
+    # hname must be the ip:port of the server if in implementation mode
+    hname: False
+    # print the regions that DDS generates if set to True
+    debug_mode: True
+    # mode can be emulation or implementation. Emulation: trasmit the video through disk, Implementation: send the video through http protocol
+    mode: emulation
+    # bandwidth_limit: 1000 # in kbps

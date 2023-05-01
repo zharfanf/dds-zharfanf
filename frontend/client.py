@@ -182,7 +182,7 @@ class Client:
                 r1, self.config.intersection_threshold)
 
             # High resolution phase
-            if aws_mode and len(req_regions) > 0:
+            if not aws_mode and len(req_regions) > 0:
                 # Crop, compress and get size
                 regions_size, _ = compute_regions_size(
                     req_regions, video_name, high_images_path,
@@ -358,7 +358,7 @@ class Client:
             # If AWStream mode is True, the following code block won't run
             # Start of AWStream block
             # Second Iteration
-            if aws_mode and len(rpn_regions) > 0:
+            if not aws_mode and len(rpn_regions) > 0:
                 batch_video_size, _ = compute_regions_size(
                     rpn_regions, vid_name, raw_images,
                     self.config.high_resolution, self.config.high_qp,

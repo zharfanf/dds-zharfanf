@@ -11,7 +11,7 @@ DIRECTION=3
 SPEED_DOWNLOAD="128kbit"
 SPEED_UPLOAD="128kbit"
 # Delay in milliseconds (0 = no delay)
-DELAY=100
+DELAY=10
 
 RANDOMID=$(shuf -i 2-9999 -n1)
 UNIQID="$RANDOMID"
@@ -168,7 +168,7 @@ case $i in
 esac
 done
 
-remove_tc
+# remove_tc
 
 [ -n $1 ] && ADDRESS=$1
 
