@@ -193,19 +193,13 @@ class Server:
                          f"{self.config.high_threshold}")
         # Extract relevant results
         for fid in range(start_fid, end_fid):
-            try:
-                fid_results = results_dict[fid]
-                for single_result in fid_results:
-                    single_result.origin = "low-res"
-                    batch_results.add_single_result(
-                        single_result, self.config.intersection_threshold)
-            except KeyError:
-                pass
-            # fid_results = results_dict[fid]
-            # for single_result in fid_results:
-            #     single_result.origin = "low-res"
-            #     batch_results.add_single_result(
-            #         single_result, self.config.intersection_threshold)
+            if fid not in results_dict:
+                results_dict[fid] = []
+            fid_results = results_dict[fid]
+            for single_result in fid_results:
+                single_result.origin = "low-res"
+                batch_results.add_single_result(
+                    single_result, self.config.intersection_threshold)
 
         detections = Results()
         rpn_regions = Results()
